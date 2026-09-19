@@ -23,7 +23,7 @@ measurements, and other swimming-performance systems.
    :maxdepth: 2
    :caption: Getting Started
 
-   getting_started
+   getting-started
 
 
 Why SWIM?

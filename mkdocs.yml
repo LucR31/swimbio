@@ -1,0 +1,55 @@
+site_name: SWIM
+site_description: An open format for swimming race and biomechanical data
+site_author: Luc R.
+site_url: !ENV READTHEDOCS_CANONICAL_URL
+
+repo_name: LucR31/swimbio
+repo_url: https://github.com/LucR31/swimbio
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+  font:
+    text: Inter
+    code: JetBrains Mono
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.superfences
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+
+  - Format:
+      - Overview: format/overview.md
+      - Specification: format/specification.md
+      - Data Model: format/data-model.md
+      - Units & Conventions: format/units.md
+
+  - Tools:
+      - Python: tools/python.md
+      - MATLAB: tools/matlab.md
+      - Validation: tools/validation.md
+
+  - Examples: examples.md
+  - Contributing: contributing.md
+  - Changelog: changelog.md

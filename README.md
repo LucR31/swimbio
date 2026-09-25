@@ -5,6 +5,8 @@ and athlete biomechanics (kinematics, IMU, force, video-sync). Because
 it's plain HDF5, it opens natively in Python and MATLAB (and C, Julia,
 R, HDFView, `h5dump`, etc.) — no custom parser needed.
 
+[https://swimbio.readthedocs.io/en/latest/](https://swimbio.readthedocs.io/en/latest/)
+
 ## Files in this package
 
 | File                     | Purpose                                                        |
@@ -21,10 +23,7 @@ R, HDFView, `h5dump`, etc.) — no custom parser needed.
 ## Requirements
 
 - **Python**: `pip install h5py numpy`
-- **MATLAB**: no toolbox needed — `h5create`/`h5write`/`h5read`/the
-  low-level `H5*` functions are part of base MATLAB (R2011b+; variable-
-  length string support needs a reasonably recent version, R2019a+
-  recommended).
+- **MATLAB**: no toolbox needed.
 
 ## Python quick start
 

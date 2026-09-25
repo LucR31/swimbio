@@ -35,19 +35,23 @@ Every `.swim` file has these attributes on the root group `/`:
 ```
 / (root, attrs: format, format_version, created, creator)
 ├── metadata/                     (group, all fields stored as attrs)
-│     athlete_name, athlete_id, sex, age, height_cm, weight_kg,
+│     athlete_name, athlete_id, sex, age,
 │     event, distance_m, stroke, course, pool_length_m, date,
 │     competition, location, lane, heat, result_time_s, notes, ...
+│
+├── anthropometrics/
+│     height_cm
+│     weight_kg
 │
 ├── race/
 │     ├── splits/                 (group)
 │     │     split_distance_m   (N,)  float64
 │     │     split_time_s       (N,)  float64
-│     │     cumulative_time_s  (N,)  float64
 │     └── laps/                   (group)
 │           lap_number         (N,)  int32
 │           lap_time_s         (N,)  float64
-│           stroke_count       (N,)  int32
+│           underwater_m       (N,)  int32, meters 
+│           stroke_count       (N,)  int32 
 │           stroke_rate_spm    (N,)  float64
 │           stroke_length_m    (N,)  float64
 │
@@ -56,10 +60,10 @@ Every `.swim` file has these attributes on the root group `/`:
 │     time                 (F,)        float64, seconds
 │     joint_names           (J,)        variable-length UTF-8 strings
 │     position              (F, J, 3)   float64, meters
-│     velocity              (F, J, 3)   float64, m/s        [optional]
-│     acceleration          (F, J, 3)   float64, m/s^2      [optional]
-│     joint_angle_names     (A,)        variable-length UTF-8 strings [optional]
-│     joint_angles          (F, A)      float64, degrees    [optional]
+│     velocity              (F, J, 3)   float64, m/s       
+│     acceleration          (F, J, 3)   float64, m/s^2     
+│     joint_angle_names     (A,)        variable-length UTF-8 strings
+│     joint_angles          (F, A)      float64, degrees   
 │
 ├── stroke_metrics/                (group, attrs: sample_rate_hz)
 │     stroke_index          (S,)   int32
@@ -89,8 +93,7 @@ Every `.swim` file has these attributes on the root group `/`:
 ```
 
 All groups except `metadata` and root are **optional** — write only the
-groups relevant to the data you have. Datasets within `kinematics`,
-`sensors/*`, `forces`, etc. marked `[optional]` may be omitted.
+groups relevant to the data you have.
 
 ## 4. Conventions
 

@@ -4,30 +4,6 @@ swim_format.py
 Read/write library for the .swim file format (HDF5-based container for
 swimming race and biomechanics data). See SWIM_FORMAT_SPEC.md for the
 full schema.
-
-Requires: h5py, numpy
-
-Quick start
------------
-    from swim_format import SwimFile
-    import numpy as np
-
-    with SwimFile("race001.swim", "w") as f:
-        f.set_metadata(athlete_name="Jane Doe", event="100m Freestyle",
-                        distance_m=100, stroke="freestyle", course="LCM",
-                        date="2026-09-18", result_time_s=52.31)
-        f.add_splits(split_distance_m=[50, 100],
-                     split_time_s=[25.1, 27.21],
-                     cumulative_time_s=[25.1, 52.31])
-        f.add_kinematics(time=np.linspace(0, 52.31, 5231),
-                          joint_names=["hip", "shoulder_r", "wrist_r"],
-                          position=np.random.randn(5231, 3, 3))
-
-    with SwimFile("race001.swim", "r") as f:
-        meta = f.get_metadata()
-        kin = f.get_kinematics()
-
-Author: generated for user request (swimming biomechanics HDF5 format)
 """
 
 from __future__ import annotations
@@ -132,49 +108,72 @@ class SwimFile:
 
     def get_metadata(self) -> Dict[str, Any]:
         grp = self.h5["metadata"]
-        return {k: (v.item() if isinstance(v, np.generic) else v) for k, v in grp.attrs.items()}
+        return {
+            k: (v.item() if isinstance(v, np.generic) else v)
+            for k, v in grp.attrs.items()
+        }
+
+    # -- anthropometrics -------------------------------------------------
 
     # -- race: splits / laps ---------------------------------------------
-    def add_splits(self, split_distance_m: ArrayLike, split_time_s: ArrayLike,
-                    cumulative_time_s: ArrayLike) -> None:
+    def add_splits(self, split_distance_m: ArrayLike, split_time_s: ArrayLike) -> None:
+
         grp = self.h5.require_group("race/splits")
         _create_dataset(grp, "split_distance_m", _as_array(split_distance_m))
         _create_dataset(grp, "split_time_s", _as_array(split_time_s))
-        _create_dataset(grp, "cumulative_time_s", _as_array(cumulative_time_s))
 
     def get_splits(self) -> Dict[str, np.ndarray]:
+
         grp = self.h5["race/splits"]
         return {k: grp[k][()] for k in grp.keys()}
 
-    def add_laps(self, lap_number: ArrayLike, lap_time_s: ArrayLike,
-                  stroke_count: Optional[ArrayLike] = None,
-                  stroke_rate_spm: Optional[ArrayLike] = None,
-                  stroke_length_m: Optional[ArrayLike] = None) -> None:
+    def add_laps(
+        self,
+        lap_number: ArrayLike,
+        lap_time_s: ArrayLike,
+        underwater_m: Optional[ArrayLike] = None,
+        stroke_count: Optional[ArrayLike] = None,
+        stroke_rate_spm: Optional[ArrayLike] = None,
+        stroke_length_m: Optional[ArrayLike] = None,
+    ) -> None:
+
         grp = self.h5.require_group("race/laps")
         _create_dataset(grp, "lap_number", _as_array(lap_number, dtype=np.int32))
         _create_dataset(grp, "lap_time_s", _as_array(lap_time_s))
+
+        if underwater_m is not None:
+            _create_dataset(
+                grp, "underwater_m", _as_array(underwater_m, dtype=np.int32)
+            )
         if stroke_count is not None:
-            _create_dataset(grp, "stroke_count", _as_array(stroke_count, dtype=np.int32))
+            _create_dataset(
+                grp, "stroke_count", _as_array(stroke_count, dtype=np.int32)
+            )
         if stroke_rate_spm is not None:
             _create_dataset(grp, "stroke_rate_spm", _as_array(stroke_rate_spm))
         if stroke_length_m is not None:
             _create_dataset(grp, "stroke_length_m", _as_array(stroke_length_m))
 
     def get_laps(self) -> Dict[str, np.ndarray]:
+
         grp = self.h5["race/laps"]
         return {k: grp[k][()] for k in grp.keys()}
 
     # -- kinematics --------------------------------------------------------
-    def add_kinematics(self, time: ArrayLike, joint_names: Sequence[str],
-                        position: ArrayLike,
-                        velocity: Optional[ArrayLike] = None,
-                        acceleration: Optional[ArrayLike] = None,
-                        joint_angle_names: Optional[Sequence[str]] = None,
-                        joint_angles: Optional[ArrayLike] = None,
-                        sample_rate_hz: Optional[float] = None,
-                        coordinate_system: str = "pool: x=length, y=width, "
-                        "z=vertical(up), origin=start wall, right-handed",
-                        units: str = "meters, seconds") -> None:
+    def add_kinematics(
+        self,
+        time: ArrayLike,
+        joint_names: Sequence[str],
+        position: ArrayLike,
+        velocity: Optional[ArrayLike] = None,
+        acceleration: Optional[ArrayLike] = None,
+        joint_angle_names: Optional[Sequence[str]] = None,
+        joint_angles: Optional[ArrayLike] = None,
+        sample_rate_hz: Optional[float] = None,
+        coordinate_system: str = "pool: x=length, y=width, "
+        "z=vertical(up), origin=start wall, right-handed",
+        units: str = "meters, seconds",
+    ) -> None:
         grp = self.h5.require_group("kinematics")
         grp.attrs["coordinate_system"] = coordinate_system
         grp.attrs["units"] = units
@@ -215,10 +214,15 @@ class SwimFile:
         return out
 
     # -- stroke metrics ------------------------------------------------------
-    def add_stroke_metrics(self, stroke_index: ArrayLike, stroke_time_s: ArrayLike,
-                            stroke_rate_spm: ArrayLike, stroke_length_m: ArrayLike,
-                            dps: Optional[ArrayLike] = None,
-                            sample_rate_hz: Optional[float] = None) -> None:
+    def add_stroke_metrics(
+        self,
+        stroke_index: ArrayLike,
+        stroke_time_s: ArrayLike,
+        stroke_rate_spm: ArrayLike,
+        stroke_length_m: ArrayLike,
+        dps: Optional[ArrayLike] = None,
+        sample_rate_hz: Optional[float] = None,
+    ) -> None:
         grp = self.h5.require_group("stroke_metrics")
         if sample_rate_hz is not None:
             grp.attrs["sample_rate_hz"] = float(sample_rate_hz)
@@ -234,9 +238,15 @@ class SwimFile:
         return {k: grp[k][()] for k in grp.keys()}
 
     # -- sensors (IMU) ------------------------------------------------------
-    def add_imu(self, location: str, time: ArrayLike, accel: ArrayLike,
-                gyro: ArrayLike, mag: Optional[ArrayLike] = None,
-                sample_rate_hz: Optional[float] = None) -> None:
+    def add_imu(
+        self,
+        location: str,
+        time: ArrayLike,
+        accel: ArrayLike,
+        gyro: ArrayLike,
+        mag: Optional[ArrayLike] = None,
+        sample_rate_hz: Optional[float] = None,
+    ) -> None:
         grp = self.h5.require_group(f"sensors/imu_{location}")
         grp.attrs["location"] = location
         if sample_rate_hz is not None:
@@ -250,8 +260,11 @@ class SwimFile:
     def list_sensors(self) -> List[str]:
         if "sensors" not in self.h5:
             return []
-        return [name[len("imu_"):] for name in self.h5["sensors"].keys()
-                if name.startswith("imu_")]
+        return [
+            name[len("imu_") :]
+            for name in self.h5["sensors"].keys()
+            if name.startswith("imu_")
+        ]
 
     def get_imu(self, location: str) -> Dict[str, Any]:
         grp = self.h5[f"sensors/imu_{location}"]
@@ -262,8 +275,12 @@ class SwimFile:
         return out
 
     # -- forces --------------------------------------------------------------
-    def add_forces(self, time: ArrayLike, force_n: ArrayLike,
-                    sample_rate_hz: Optional[float] = None) -> None:
+    def add_forces(
+        self,
+        time: ArrayLike,
+        force_n: ArrayLike,
+        sample_rate_hz: Optional[float] = None,
+    ) -> None:
         grp = self.h5.require_group("forces")
         if sample_rate_hz is not None:
             grp.attrs["sample_rate_hz"] = float(sample_rate_hz)
@@ -275,9 +292,13 @@ class SwimFile:
         return {k: grp[k][()] for k in grp.keys()}
 
     # -- video sync ------------------------------------------------------------
-    def add_video_sync(self, sync_timestamps: ArrayLike, frame_rate_hz: float,
-                        resolution: Optional[str] = None,
-                        camera_id: Optional[str] = None) -> None:
+    def add_video_sync(
+        self,
+        sync_timestamps: ArrayLike,
+        frame_rate_hz: float,
+        resolution: Optional[str] = None,
+        camera_id: Optional[str] = None,
+    ) -> None:
         grp = self.h5.require_group("video")
         grp.attrs["frame_rate_hz"] = float(frame_rate_hz)
         if resolution is not None:
@@ -294,18 +315,31 @@ class SwimFile:
 
     # -- introspection --------------------------------------------------------
     def summary(self) -> str:
-        lines = [f"SWIM file: {self.path}",
-                 f"  format_version: {self.h5.attrs.get('format_version')}",
-                 f"  created: {self.h5.attrs.get('created')}"]
+        lines = [
+            f"SWIM file: {self.path}",
+            f"  format_version: {self.h5.attrs.get('format_version')}",
+            f"  created: {self.h5.attrs.get('created')}",
+        ]
         meta = self.get_metadata()
         if meta:
-            lines.append("  metadata: " + ", ".join(f"{k}={v}" for k, v in meta.items()))
-        for grp_name in ("race/splits", "race/laps", "kinematics",
-                         "stroke_metrics", "forces", "video"):
+            lines.append(
+                "  metadata: " + ", ".join(f"{k}={v}" for k, v in meta.items())
+            )
+        for grp_name in (
+            "race/splits",
+            "race/laps",
+            "kinematics",
+            "stroke_metrics",
+            "forces",
+            "video",
+        ):
             if grp_name in self.h5:
                 grp = self.h5[grp_name]
-                shapes = ", ".join(f"{k}{grp[k].shape}" for k in grp.keys()
-                                    if isinstance(grp[k], h5py.Dataset))
+                shapes = ", ".join(
+                    f"{k}{grp[k].shape}"
+                    for k in grp.keys()
+                    if isinstance(grp[k], h5py.Dataset)
+                )
                 lines.append(f"  {grp_name}: {shapes}")
         sensors = self.list_sensors()
         if sensors:
@@ -315,14 +349,18 @@ class SwimFile:
 
 # -- convenience functional API ---------------------------------------------
 
-def write_swim(path: str, metadata: Dict[str, Any],
-               splits: Optional[Dict[str, ArrayLike]] = None,
-               laps: Optional[Dict[str, ArrayLike]] = None,
-               kinematics: Optional[Dict[str, Any]] = None,
-               stroke_metrics: Optional[Dict[str, ArrayLike]] = None,
-               imu: Optional[Dict[str, Dict[str, Any]]] = None,
-               forces: Optional[Dict[str, ArrayLike]] = None,
-               video: Optional[Dict[str, Any]] = None) -> None:
+
+def write_swim(
+    path: str,
+    metadata: Dict[str, Any],
+    splits: Optional[Dict[str, ArrayLike]] = None,
+    laps: Optional[Dict[str, ArrayLike]] = None,
+    kinematics: Optional[Dict[str, Any]] = None,
+    stroke_metrics: Optional[Dict[str, ArrayLike]] = None,
+    imu: Optional[Dict[str, Dict[str, Any]]] = None,
+    forces: Optional[Dict[str, ArrayLike]] = None,
+    video: Optional[Dict[str, Any]] = None,
+) -> None:
     """One-shot writer: pass plain dicts matching each add_* method's kwargs."""
     with SwimFile(path, "w") as f:
         f.set_metadata(**metadata)
@@ -381,8 +419,9 @@ def validate_swim(path: str) -> List[str]:
                 grp = h5["kinematics"]
                 if "time" in grp and "position" in grp:
                     if grp["time"].shape[0] != grp["position"].shape[0]:
-                        problems.append("kinematics/time and kinematics/position "
-                                         "length mismatch")
+                        problems.append(
+                            "kinematics/time and kinematics/position " "length mismatch"
+                        )
     except OSError as exc:
         problems.append(f"could not open file as HDF5: {exc}")
     return problems
